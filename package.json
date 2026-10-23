@@ -1,0 +1,11 @@
+{
+  "name": "canteen-radar",
+  "version": "1.0.0",
+  "description": "校园食堂点评推荐 — Bayesian ranking + taste-profile matching, zero dependency",
+  "main": "src/recommend.js",
+  "scripts": {
+    "test": "node --test test/recommend.test.js"
+  },
+  "license": "MIT",
+  "author": "Tianna Zhang"
+}

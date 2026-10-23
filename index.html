@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>食堂雷达 · 校园食堂点评推荐</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1d212b; --line: #2a2f3c;
+    --text: #e6e9f0; --muted: #8b93a7; --accent: #4da3ff; --good: #3ecf8e;
+    --warn: #ff6b6b; --amber: #ffb454;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.6 "Segoe UI", "Microsoft YaHei", sans-serif; }
+  header { padding: 20px 24px 0; max-width: 1080px; margin: 0 auto; }
+  header h1 { font-size: 22px; }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  nav { display: flex; gap: 8px; margin: 16px auto 0; max-width: 1080px; padding: 0 24px; }
+  nav button { background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+    padding: 8px 18px; border-radius: 999px; cursor: pointer; font-size: 14px; }
+  nav button.on { background: var(--accent); border-color: var(--accent); color: #08101d; font-weight: 600; }
+  main { max-width: 1080px; margin: 18px auto 60px; padding: 0 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .meta { color: var(--muted); font-size: 12.5px; margin: 2px 0 8px; }
+  .badge { font-size: 11px; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+  .badge.warn { background: rgba(255,107,107,.15); color: var(--warn); border: 1px solid rgba(255,107,107,.4); }
+  .badge.new { background: rgba(62,207,142,.15); color: var(--good); border: 1px solid rgba(62,207,142,.4); }
+  .badge.few { background: rgba(255,180,84,.12); color: var(--amber); border: 1px solid rgba(255,180,84,.35); }
+  .score { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .bars { margin: 8px 0; }
+  .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin: 3px 0; }
+  .bar-row label { width: 56px; text-align: right; }
+  .bar { flex: 1; height: 7px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 4px; }
+  .q { background: var(--good); } .t { background: var(--accent); } .n { background: var(--amber); }
+  .rate { color: var(--amber); font-size: 13px; }
+  .acts { display: flex; gap: 8px; margin-top: 10px; }
+  .acts button { flex: 1; padding: 7px 0; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel2); color: var(--text); cursor: pointer; font-size: 13px; }
+  .acts button:hover { border-color: var(--accent); }
+  .note { color: var(--muted); font-size: 12.5px; margin-top: 6px; border-left: 2px solid var(--line); padding-left: 8px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filters button { background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+    padding: 5px 14px; border-radius: 999px; cursor: pointer; font-size: 13px; }
+  .filters button.on { color: var(--accent); border-color: var(--accent); }
+  #modal { position: fixed; inset: 0; background: rgba(5,7,12,.7); display: none;
+    align-items: center; justify-content: center; z-index: 10; }
+  #modal .box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px 22px; width: min(420px, 92vw); }
+  #stars { font-size: 30px; letter-spacing: 6px; cursor: pointer; margin: 8px 0 14px; color: var(--panel2); }
+  #stars b { color: var(--amber); font-weight: 400; }
+  textarea { width: 100%; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 8px 10px; font: inherit; min-height: 70px; resize: vertical; }
+  .modal-acts { display: flex; gap: 10px; margin-top: 14px; }
+  .modal-acts button { flex: 1; padding: 9px 0; border-radius: 8px; cursor: pointer; border: 1px solid var(--line); }
+  #saveBtn { background: var(--accent); color: #08101d; font-weight: 600; border-color: var(--accent); }
+  #cancelBtn { background: var(--panel2); color: var(--muted); }
+  .profile-bar { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 13px; }
+  .profile-bar label { width: 64px; text-align: right; color: var(--muted); }
+  .pb-track { flex: 1; display: flex; height: 10px; background: var(--panel2); border-radius: 5px; overflow: hidden; position: relative; }
+  .pb-track::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .pb-pos { background: var(--good); } .pb-neg { background: var(--warn); }
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; grid-column: 1 / -1; }
+  .tip { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🍚 食堂<span>雷达</span></h1>
+  <p>校园食堂点评推荐 · 发现新菜、避开踩雷窗口 · 数据仅存本地 localStorage</p>
+</header>
+<nav>
+  <button data-tab="rec" class="on">今日推荐</button>
+  <button data-tab="all">全部菜品</button>
+  <button data-tab="me">我的档案</button>
+</nav>
+<main id="app"></main>
+
+<div id="modal"><div class="box">
+  <h3 id="modalTitle">点评</h3>
+  <div id="stars"></div>
+  <textarea id="noteInput" placeholder="一句话点评：咸淡、分量、排队、性价比…（选填）"></textarea>
+  <div class="modal-acts">
+    <button id="cancelBtn">取消</button>
+    <button id="saveBtn">提交点评</button>
+  </div>
+</div></div>
+
+<script src="src/recommend.js"></script>
+<script>
+"use strict";
+/* ============================== 种子数据 ============================== */
+/* flavors: 六维风味向量 ∈ [0,1]；ratings 按时间升序（旧→新）*/
+const DIMS = { spicy: "辣", light: "清淡", meaty: "肉量", staple: "主食", sweet: "甜", veggie: "素" };
+const SEED = [
+  { id: "lazi",   name: "辣子鸡丁",     canteen: "第一食堂", window: "川湘窗口",   price: 12, flavors: { spicy: .9, meaty: .7, staple: .5, light: .1, sweet: 0,  veggie: .1 }, ratings: [5,4,5,4,5,5,4,5,4,5,5,3,4,5,4,5] },
+  { id: "meicai", name: "梅菜扣肉",     canteen: "第一食堂", window: "家常窗口",   price: 15, flavors: { meaty: .95, staple: .8, spicy: .2, sweet: .3, light: .1, veggie: 0 },  ratings: [4,4,3,5,4,4,3,4] },
+  { id: "zhengyu",name: "清蒸鲈鱼",     canteen: "第一食堂", window: "海鲜窗口",   price: 18, flavors: { light: .9, meaty: .6, staple: .2, veggie: .1, spicy: .05, sweet: .1 }, ratings: [5,4] },
+  { id: "fanqie", name: "番茄牛腩",     canteen: "第二食堂", window: "炖菜窗口",   price: 14, flavors: { meaty: .8, staple: .6, light: .4, sweet: .3, spicy: .1, veggie: .1 },  ratings: [4,5,4,4,5,3,4,4,5,4] },
+  { id: "mapo",   name: "麻婆豆腐",     canteen: "第二食堂", window: "川味窗口",   price: 6,  flavors: { spicy: .8, veggie: .7, staple: .6, meaty: .2, light: .1, sweet: .05 }, ratings: [5,5,4,5,4,5,5,4,5] },
+  { id: "shuizhu",name: "水煮肉片",     canteen: "第二食堂", window: "川味窗口",   price: 14, flavors: { spicy: .85, meaty: .8, staple: .5, light: .05, sweet: 0, veggie: .15 }, ratings: [5,5,4,5,5,5,4,2,1,1,2,1] }, /* 近期滑坡 */
+  { id: "mian",   name: "西红柿鸡蛋面", canteen: "第二食堂", window: "面点窗口",   price: 8,  flavors: { staple: .9, light: .6, veggie: .4, sweet: .2, meaty: .2, spicy: .05 },  ratings: [4,3,4,4,5,3,4] },
+  { id: "lamian", name: "牛肉拉面",     canteen: "清真食堂", window: "拉面窗口",   price: 11, flavors: { staple: .85, meaty: .7, spicy: .3, light: .4, veggie: .2, sweet: 0 },  ratings: [5,4,5,4,4,5,4,5,4,5,3,5] },
+  { id: "zhuafan",name: "手抓饭",       canteen: "清真食堂", window: "抓饭窗口",   price: 13, flavors: { staple: .9, meaty: .6, light: .5, sweet: .2, veggie: .2, spicy: .05 }, ratings: [4,5,4,3,4] },
+  { id: "gali",   name: "咖喱鸡肉饭",   canteen: "第一食堂", window: "东南亚窗口", price: 12, flavors: { staple: .8, meaty: .6, sweet: .5, spicy: .35, light: .2, veggie: .15 }, ratings: [3,4,3,5,3,4,3] },
+  { id: "caixin", name: "白灼菜心",     canteen: "第二食堂", window: "轻食窗口",   price: 5,  flavors: { veggie: .95, light: .95, staple: .2, sweet: .1, spicy: .02, meaty: .05 }, ratings: [4,5,4,4,5,4] },
+  { id: "huacai", name: "干锅花菜",     canteen: "第一食堂", window: "川湘窗口",   price: 10, flavors: { veggie: .8, spicy: .7, staple: .5, meaty: .25, light: .2, sweet: .1 },   ratings: [5,4,4,5,3,4,5] },
+  { id: "suanmei",name: "冰镇酸梅汤",   canteen: "第二食堂", window: "饮品窗口",   price: 3,  flavors: { sweet: .9, light: .6, veggie: .3, staple: .1, meaty: 0, spicy: 0 },     ratings: [5,5,4,5,5,4] },
+  { id: "shizitou",name: "红烧狮子头",  canteen: "第二食堂", window: "淮扬窗口",   price: 13, flavors: { meaty: .9, staple: .5, sweet: .4, light: .3, spicy: .05, veggie: .1 },  ratings: [5,5,4] }
+];
+
+/* ============================== 本地状态 ============================== */
+const LS_KEY = "canteen-radar-v1";
+let state = load();
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && s.reviews && s.eaten) return s; } catch (e) {}
+  return { reviews: {}, eaten: {} }; /* reviews: dishId→[{r,note,ts}]  eaten: dishId→ts */
+}
+function save() { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+const DAY = 864e5;
+function dishesWithMine() {
+  return SEED.map(d => ({ ...d, ratings: d.ratings.concat((state.reviews[d.id] || []).map(x => x.r)) }));
+}
+function eatLog() {
+  const log = {};
+  for (const id in state.eaten) log[id] = Math.floor((Date.now() - state.eaten[id]) / DAY);
+  return log;
+}
+function myProfile() {
+  const recs = [];
+  for (const id in state.reviews) {
+    const d = SEED.find(x => x.id === id);
+    for (const rv of state.reviews[id]) recs.push({ flavors: d.flavors, rating: rv.r });
+  }
+  return CanteenRadar.buildTasteProfile(recs);
+}
+
+/* ============================== 渲染 ============================== */
+const app = document.getElementById("app");
+let tab = "rec";
+const filters = { excludeWarn: false, cheapFirst: false };
+
+function stars(avg) { return "★".repeat(Math.round(avg)) + `<span style="opacity:.35">${"★".repeat(5 - Math.round(avg))}</span>`; }
+function bar(cls, v) { return `<div class="bar-row"><label>${{ q: "质量", t: "口味", n: "新鲜" }[cls]}</label><div class="bar"><i class="${cls}" style="width:${Math.round(v * 100)}%"></i></div><span>${v.toFixed(2)}</span></div>`; }
+
+function cardHtml(o, mine) {
+  const d = o.dish, avg = CanteenRadar.mean(d.ratings);
+  const few = d.ratings.length < 5;
+  let badges = "";
+  if (o.warning) badges += `<span class="badge warn">近期口碑下滑 ${o.drop.toFixed(1)}★</span>`;
+  if (few) badges += `<span class="badge few">样本少·分数已收缩</span>`;
+  if (o.detail.novelty === 1 && !state.eaten[d.id]) badges += `<span class="badge new">没吃过</span>`;
+  const myRv = (state.reviews[d.id] || []);
+  const notes = myRv.slice(-2).map(x => `<div class="note">我的点评 ${"★".repeat(x.r)} ${x.note ? "· " + esc(x.note) : ""}</div>`).join("");
+  return `<div class="card">
+    <h3>${d.name} ${badges}</h3>
+    <div class="meta">${d.canteen} · ${d.window} · ¥${d.price} · ${d.ratings.length} 条评分</div>
+    <div class="score">${o.score != null ? o.score.toFixed(3) : avg.toFixed(1)}</div>
+    ${o.detail ? `<div class="bars">${bar("q", o.detail.quality)}${bar("t", o.detail.taste)}${bar("n", o.detail.novelty)}</div>` : ""}
+    <div class="rate">${stars(avg)} <span style="color:var(--muted)">${avg.toFixed(2)}</span></div>
+    ${notes}
+    <div class="acts">
+      <button onclick="openReview('${d.id}')">✍ 点评</button>
+      <button onclick="markEaten('${d.id}')">🍽 我刚吃过</button>
+    </div>
+  </div>`;
+}
+function esc(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function render() {
+  if (tab === "rec") {
+    const top = CanteenRadar.recommend(dishesWithMine(), { profile: myProfile(), eatLog: eatLog(), topK: 6, maxPerCanteen: 2 });
+    app.innerHTML = `<p class="tip">按「质量 × 口味匹配 × 新鲜度」加权排序；同一食堂最多 2 道，鼓励换食堂尝新。吃过/点评过的菜会实时更新推荐。</p>
+      <div class="grid">${top.map(o => cardHtml(o)).join("")}</div>`;
+  } else if (tab === "all") {
+    let ds = dishesWithMine().map(d => {
+      const s = CanteenRadar.scoreDish(d, { profile: myProfile(), priorMean: CanteenRadar.pooledPriorMean(dishesWithMine()),
+        daysSinceLast: state.eaten[d.id] !== undefined ? Math.floor((Date.now() - state.eaten[d.id]) / DAY) : null });
+      return { ...s, dish: d };
+    });
+    if (filters.excludeWarn) ds = ds.filter(o => !o.warning);
+    if (filters.cheapFirst) ds.sort((a, b) => a.dish.price - b.dish.price || b.score - a.score);
+    else ds.sort((a, b) => b.detail.bayes - a.detail.bayes);
+    app.innerHTML = `<div class="filters">
+        <button class="${!filters.cheapFirst ? "on" : ""}" onclick="setFilter('cheapFirst',false)">按口碑</button>
+        <button class="${filters.cheapFirst ? "on" : ""}" onclick="setFilter('cheapFirst',true)">按价格</button>
+        <button class="${filters.excludeWarn ? "on" : ""}" onclick="setFilter('excludeWarn',${!filters.excludeWarn})">排除预警窗口</button>
+      </div><div class="grid">${ds.map(o => cardHtml(o)).join("")}</div>`;
+  } else {
+    const p = myProfile(), nReviews = Object.values(state.reviews).reduce((s, a) => s + a.length, 0);
+    const nEaten = Object.keys(state.eaten).length;
+    let maxAbs = 1;
+    for (const k in p) maxAbs = Math.max(maxAbs, Math.abs(p[k]));
+    const bars = Object.keys(DIMS).map(k => {
+      const v = (p[k] || 0) / maxAbs;
+      return `<div class="profile-bar"><label>${DIMS[k]}</label><div class="pb-track">
+        <div class="${v >= 0 ? "pb-pos" : "pb-neg"}" style="${v >= 0 ? `margin-left:50%;width:${v * 50}%` : `margin-left:${50 + v * 50}%;width:${-v * 50}%`}"></div>
+      </div><span style="width:44px;color:var(--muted);font-size:12px">${(p[k] || 0).toFixed(1)}</span></div>`;
+    }).join("");
+    app.innerHTML = `<div class="grid" style="grid-template-columns:1fr">
+      <div class="card"><h3>口味画像</h3>
+        <div class="meta">由你的 ${nReviews} 条点评构造（好评正向、差评反向），右侧为各风味维度的偏好强度</div>
+        ${nReviews ? bars : '<p class="empty">还没有点评，去「今日推荐」或「全部菜品」给吃过的菜打个分吧</p>'}
+      </div>
+      <div class="card"><h3>数据</h3>
+        <div class="meta">点评 ${nReviews} 条 · 就餐记录 ${nEaten} 条 · 全部存于浏览器 localStorage，不上传任何服务器</div>
+        <div class="acts"><button onclick="resetAll()" style="border-color:var(--warn);color:var(--warn)">清空我的数据</button></div>
+      </div></div>`;
+  }
+}
+function setFilter(k, v) { filters[k] = v; render(); }
+function markEaten(id) { state.eaten[id] = Date.now(); save(); render(); }
+function resetAll() { if (confirm("确定清空所有点评和就餐记录？")) { state = { reviews: {}, eaten: {} }; save(); render(); } }
+
+/* ============================== 点评弹窗 ============================== */
+let modalDish = null, modalStars = 0;
+const modal = document.getElementById("modal"), starsEl = document.getElementById("stars");
+function openReview(id) {
+  modalDish = SEED.find(d => d.id === id); modalStars = 0;
+  document.getElementById("modalTitle").textContent = `点评「${modalDish.name}」 · ${modalDish.canteen}`;
+  document.getElementById("noteInput").value = "";
+  drawStars(); modal.style.display = "flex";
+}
+function drawStars() {
+  starsEl.innerHTML = [1, 2, 3, 4, 5].map(i => `<b data-i="${i}" style="${i <= modalStars ? "" : "color:var(--panel2)"}">★</b>`).join("");
+}
+starsEl.addEventListener("click", e => { if (e.target.dataset.i) { modalStars = +e.target.dataset.i; drawStars(); } });
+document.getElementById("cancelBtn").onclick = () => modal.style.display = "none";
+document.getElementById("saveBtn").onclick = () => {
+  if (!modalStars) { alert("请先点星打分"); return; }
+  const id = modalDish.id;
+  (state.reviews[id] = state.reviews[id] || []).push({ r: modalStars, note: document.getElementById("noteInput").value.trim(), ts: Date.now() });
+  state.eaten[id] = Date.now(); /* 点评即视为刚吃过 */
+  save(); modal.style.display = "none"; render();
+};
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); tab = b.dataset.tab; render();
+});
+render();
+</script>
+</body>
+</html>
